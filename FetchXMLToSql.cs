@@ -159,7 +159,7 @@ namespace FetchXMLToSql
 
         #endregion
 
-        public string ConvertToSQL(string FetchXML)
+        public static string ConvertToSQL(string FetchXML)
         {
             try
             {
