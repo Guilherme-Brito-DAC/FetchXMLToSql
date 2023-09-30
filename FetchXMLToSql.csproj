@@ -4,4 +4,14 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+	<PropertyGroup>
+		<PackageId>FetchXMLToSql</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Guilherme Brito</Authors>
+		<RepositoryUrl>https://github.com/Guilherme-Brito-DAC/FetchXMLToSql</RepositoryUrl>
+		<Description>
+			Microsoft FetchXML query language converter for a select statement in SQL (For SQL SERVER)
+		</Description>
+	</PropertyGroup>
+
 </Project>

@@ -234,7 +234,7 @@ namespace FetchXMLToSql
         }
 
         #region [Privates]
-        private string ConvertToSqlOrderByClause(List<Order> Order)
+        private static string ConvertToSqlOrderByClause(List<Order> Order)
         {
             string orderBy = string.Empty;
 
@@ -263,7 +263,7 @@ namespace FetchXMLToSql
             return orderBy;
         }
 
-        private string ConvertToSqlWhereClause(Filter filter)
+        private static string ConvertToSqlWhereClause(Filter filter)
         {
             if (filter == null)
             {
@@ -327,7 +327,7 @@ namespace FetchXMLToSql
             return "WHERE " + whereClause.ToString();
         }
 
-        private string GetSqlOperator(string fetchXmlOperator)
+        private static string GetSqlOperator(string fetchXmlOperator)
         {
             switch (fetchXmlOperator.ToLower())
             {
@@ -345,12 +345,16 @@ namespace FetchXMLToSql
                     return "<=";
                 case "like":
                     return "LIKE";
+                case "null":
+                    return "IS NULL";
+                case "not-null":
+                    return "IS NOT NULL";
                 default:
                     throw new NotSupportedException($"Operator '{fetchXmlOperator}' is not supported.");
             }
         }
 
-        private string ConvertToSqlJoin(List<LinkEntity> linkEntities, string primaryTableAlias = "t0")
+        private static string ConvertToSqlJoin(List<LinkEntity> linkEntities, string primaryTableAlias = "t0")
         {
             var joinStringBuilder = new StringBuilder();
 
@@ -381,9 +385,10 @@ namespace FetchXMLToSql
             return joinStringBuilder.ToString();
         }
 
-        private string GetTableAlias(string tableName, Dictionary<string, int> aliasCounters, string primaryTableAlias = null)
+        private static string GetTableAlias(string tableName, Dictionary<string, int> aliasCounters, string primaryTableAlias = null)
         {
             string aliasBase = tableName.ToLowerInvariant();
+
             if (aliasCounters.TryGetValue(aliasBase, out int aliasCounter))
             {
                 aliasCounters[aliasBase]++;
@@ -394,7 +399,7 @@ namespace FetchXMLToSql
             return aliasBase;
         }
 
-        private bool IsValidXml(string xmlString)
+        private static bool IsValidXml(string xmlString)
         {
             try
             {
@@ -417,7 +422,7 @@ namespace FetchXMLToSql
             }
         }
 
-        private Fetch DeserializeXML(string xml)
+        private static Fetch DeserializeXML(string xml)
         {
             try
             {
