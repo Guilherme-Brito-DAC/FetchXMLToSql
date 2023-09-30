@@ -1,164 +1,17 @@
-﻿using System;
+﻿using FetchXMLToSqlConverter.Model;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
-using static System.Net.WebRequestMethods;
+using Attribute = FetchXMLToSqlConverter.Model.Attribute;
 
-namespace FetchXMLToSql
+namespace FetchXMLSqlConverter
 {
     public class FetchXMLToSql
     {
-        #region [Class]
-        [XmlRoot(ElementName = "attribute")]
-        private class Attribute
-        {
-            [XmlAttribute(AttributeName = "name")]
-            public string Name { get; set; }
-
-            [XmlAttribute(AttributeName = "alias")]
-            public string Alias { get; set; }
-        }
-
-        [XmlRoot(ElementName = "condition")]
-        private class Condition
-        {
-
-            [XmlElement(ElementName = "value")]
-            public List<string> Value { get; set; }
-
-            [XmlAttribute(AttributeName = "attribute")]
-            public string Attribute { get; set; }
-
-            [XmlAttribute(AttributeName = "operator")]
-            public string Operator { get; set; }
-
-            [XmlText]
-            public string Text { get; set; }
-        }
-
-        [XmlRoot(ElementName = "filter")]
-        private class Filter
-        {
-
-            [XmlElement(ElementName = "condition")]
-            public List<Condition> Condition { get; set; }
-
-            [XmlAttribute(AttributeName = "type")]
-            public string Type { get; set; } // And & Or
-
-            [XmlElement(ElementName = "filter")]
-            public Filter InnerFilter { get; set; }
-
-            [XmlText]
-            public string Text { get; set; }
-        }
-
-        [XmlRoot(ElementName = "link-entity")]
-        private class LinkEntity
-        {
-
-            [XmlElement(ElementName = "attribute")]
-            public List<Attribute> Attribute { get; set; }
-
-            [XmlAttribute(AttributeName = "name")]
-            public string Name { get; set; }
-
-            [XmlAttribute(AttributeName = "from")]
-            public string From { get; set; }
-
-            [XmlAttribute(AttributeName = "to")]
-            public string To { get; set; }
-
-            [XmlAttribute(AttributeName = "visible")]
-            public bool Visible { get; set; }
-
-            [XmlAttribute(AttributeName = "link-type")]
-            public string LinkType { get; set; }
-
-            [XmlAttribute(AttributeName = "alias")]
-            public string Alias { get; set; }
-
-            [XmlElement(ElementName = "filter")]
-            public List<Filter> Filter { get; set; }
-        }
-
-        [XmlRoot(ElementName = "order")]
-        private class Order
-        {
-
-            [XmlAttribute(AttributeName = "attribute")]
-            public string Attribute { get; set; }
-
-            [XmlAttribute(AttributeName = "descending")]
-            public string Descending { get; set; }
-        }
-
-        [XmlRoot(ElementName = "entity")]
-        private class Entity
-        {
-
-            [XmlElement(ElementName = "attribute")]
-            public List<Attribute> Attribute { get; set; }
-
-            [XmlElement(ElementName = "all-attributes")]
-            public object allAttributes { get; set; }
-
-            [XmlElement(ElementName = "order")]
-            public List<Order> Order { get; set; }
-
-            [XmlElement(ElementName = "filter")]
-            public Filter Filter { get; set; }
-
-            [XmlElement(ElementName = "link-entity")]
-            public List<LinkEntity> LinkEntity { get; set; }
-
-            [XmlAttribute(AttributeName = "name")]
-            public string Name { get; set; }
-
-            [XmlAttribute(AttributeName = "alias")]
-            public string Alias { get; set; }
-
-            [XmlText]
-            public string Text { get; set; }
-        }
-
-        [XmlRoot(ElementName = "fetch")]
-        private class Fetch
-        {
-
-            [XmlElement(ElementName = "entity")]
-            public Entity Entity { get; set; }
-
-            [XmlAttribute(AttributeName = "version")]
-            public double Version { get; set; }
-
-            [XmlAttribute(AttributeName = "output-format")]
-            public string OutputFormat { get; set; }
-
-            [XmlAttribute(AttributeName = "mapping")]
-            public string Mapping { get; set; }
-
-            [XmlAttribute(AttributeName = "distinct")]
-            public bool? Distinct { get; set; }
-
-            [XmlAttribute(AttributeName = "page")]
-            public int? Page { get; set; }
-
-            [XmlAttribute(AttributeName = "count")]
-            public int? Count { get; set; }
-
-            [XmlText]
-            public string Text { get; set; }
-        }
-
-        #endregion
-
         public static string ConvertToSQL(string FetchXML)
         {
             try
@@ -171,9 +24,10 @@ namespace FetchXMLToSql
                 Fetch fetch = DeserializeXML(FetchXML);
 
                 #region [Variables]
-                bool distinct = fetch.Distinct.HasValue && fetch.Distinct.Value;
+                bool distinct = string.IsNullOrEmpty(fetch.Distinct) ? false : fetch.Distinct == "true";
                 string table = fetch.Entity.Name;
-                string columns = string.Empty;
+                List<string> columns = new List<string>();
+                string columnSql = string.Empty;
                 string top = string.Empty;
                 string page = string.Empty;
                 string orderBy = string.Empty;
@@ -181,30 +35,32 @@ namespace FetchXMLToSql
                 string join = string.Empty;
                 #endregion
 
-                if (fetch.Count.HasValue)
+                if (!string.IsNullOrEmpty(fetch.Count))
                 {
-                    top = $"TOP {fetch.Count.Value}";
+                    top = $"TOP {fetch.Count}";
                 }
 
-                if (fetch.Page.HasValue)
+                if (!string.IsNullOrEmpty(fetch.Page))
                 {
-                    int recordsPerPage = fetch.Count.HasValue ? fetch.Count.Value : 50;
+                    int recordsPerPage = !string.IsNullOrEmpty(fetch.Count) ? int.Parse(fetch.Count) : 50;
 
                     top = string.Empty; // TOP cannot be combined with OFFSET and FETCH in the same query expression
 
-                    page = $"OFFSET {recordsPerPage * fetch.Page.Value} ROWS FETCH NEXT {recordsPerPage} ROWS ONLY";
+                    page = $"OFFSET {recordsPerPage * int.Parse(fetch.Page)} ROWS FETCH NEXT {recordsPerPage} ROWS ONLY";
                 }
 
                 if (fetch.Entity.Attribute != null && fetch.Entity.Attribute.Any())
                 {
                     foreach (Attribute attribute in fetch.Entity.Attribute)
                     {
-                        columns += attribute.Name;
+                        columns.Add(attribute.Name);
                     }
+
+                    columnSql = string.Join(',', columns);
                 }
                 else
                 {
-                    columns = "*";
+                    columnSql = "*";
                 }
 
                 orderBy = ConvertToSqlOrderByClause(fetch.Entity.Order);
@@ -223,7 +79,7 @@ namespace FetchXMLToSql
                     table = ""; // the method above insert alias in the join statement
                 }
 
-                string sql = $"SELECT {top} {columns} FROM {table} {join} {where} {orderBy} {page}";
+                string sql = $"SELECT {top} {columnSql} FROM {table} {join} {where} {orderBy} {page}";
 
                 return sql;
             }
@@ -245,7 +101,7 @@ namespace FetchXMLToSql
 
             orderBy = $"ORDER BY ";
 
-            for (int i = 0; i < Order.Count() - 1; i++)
+            for (int i = 0; i < Order.Count(); i++)
             {
                 string direction = string.Empty;
 
@@ -284,20 +140,9 @@ namespace FetchXMLToSql
                     whereClause.Append("(");
                     whereClause.Append($"{condition.Attribute} {GetSqlOperator(condition.Operator)}");
 
-                    if (condition.Value != null && condition.Value.Count > 0)
+                    if (!string.IsNullOrEmpty(condition.Value))
                     {
-                        whereClause.Append("(");
-
-                        foreach (var value in condition.Value)
-                        {
-                            whereClause.Append($"'{value}'");
-                            if (value != condition.Value.Last())
-                            {
-                                whereClause.Append(" OR ");
-                            }
-                        }
-
-                        whereClause.Append(")");
+                        whereClause.Append($"'{condition.Value}'");
                     }
 
                     whereClause.Append(")");
