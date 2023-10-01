@@ -24,3 +24,7 @@ string SqlResult = FetchXMLToSql.ConvertToSQL(FetchXml);
 <i>Some operators are missing, they will be added in the next release</i>
 
 Feel free to to contribute :) 
+
+# Installation
+
+Nuget URL : https://www.nuget.org/packages/FetchXMLToSql/1.0.0
