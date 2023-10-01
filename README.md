@@ -28,3 +28,4 @@ Feel free to to contribute :)
 # Installation
 
 Nuget URL : https://www.nuget.org/packages/FetchXMLToSql/1.0.0
+`dotnet add package FetchXMLToSql --version 1.0.0` 
