@@ -138,7 +138,7 @@ namespace FetchXMLSqlConverter
                     }
 
                     whereClause.Append("(");
-                    whereClause.Append($"{condition.Attribute} {GetSqlOperator(condition.Operator)}");
+                    whereClause.Append($"{condition.Attribute} {GetSqlOperator(condition.Operator)} ");
 
                     if (!string.IsNullOrEmpty(condition.Value))
                     {
